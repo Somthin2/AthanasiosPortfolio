@@ -718,7 +718,8 @@ body.has-art-home #big-name .ch:not(.box):not(.boxw){
 .form-send:disabled{opacity:.55;cursor:wait;}
 #form-status{
   font-weight:700;letter-spacing:.08em;font-size:13px;
-  text-transform:uppercase;color:var(--ink);
+  text-transform:uppercase;color:var(--red);
+  min-height:1.4em;
 }
 .paper a{color:var(--red);font-weight:700;}
 .paper a:hover{background:var(--red);color:var(--white);text-decoration:none;}
