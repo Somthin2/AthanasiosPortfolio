@@ -87,7 +87,7 @@ const Controller = {
     View.setMenuSelection(next);
     if (this._poses) {
       const target = View.els.menuItems[next].dataset.target;
-      View.setJokerPose(this._poses[target] || "assets/joker-hand-clear.png", false, true);
+      View.setJokerPose(this._poses[target] || "assets/joker-hand-clear.png", false, false);
     }
   },
 
