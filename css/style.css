@@ -154,8 +154,8 @@ body[data-screen]:not([data-screen="home"]) #slash{
 #screen-home.active{display:flex;flex-direction:column;justify-content:center;}
 #intro-eyebrow{
   font-size:clamp(12px,1.3vw,16px);letter-spacing:.55em;text-transform:uppercase;
-  margin-bottom:1.4vh;font-weight:700;color:var(--red);
-  text-shadow:0 0 20px rgba(230,0,18,.4);
+  margin-bottom:1.4vh;font-weight:700;color:var(--white);
+  text-shadow:0 0 18px rgba(230,0,18,.7),1px 1px 0 rgba(0,0,0,.8);
 }
 #intro-eyebrow::after{
   content:'_';

@@ -91,15 +91,8 @@ const Controller = {
     }
   },
 
-  async loadProjects() {
+  loadProjects() {
     View.renderFeatured(Model.featured);
-    if (Model.state.reposLoaded) return;
-    const { repos, live } = await Model.fetchRepos();
-    const status = live
-      ? `${repos.length} repositories · live from GitHub`
-      : "Showing selected work · GitHub API unavailable";
-    View.renderRepos(repos, status, Model);
-    Model.state.reposLoaded = true;
   },
 
   loadSkills() {
