@@ -27,16 +27,29 @@ const Controller = {
     if (Date.now() - +(localStorage.getItem(KEY) || 0) < DAY) return;
     localStorage.setItem(KEY, Date.now());
     try {
+      let ip = "—", location = "—";
+      try {
+        const geo = await (await fetch("https://ipapi.co/json/")).json();
+        ip = geo.ip ?? "—";
+        location = [geo.city, geo.region, geo.country_name].filter(Boolean).join(", ") || "—";
+      } catch { /* geo failed, still send ping */ }
+
+      const ref = document.referrer
+        ? new URL(document.referrer).hostname
+        : "direct";
+
       await fetch(`https://formsubmit.co/ajax/${Model.contactEmail}`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify({
           _subject: "👁 Portfolio visit",
           _honey: "",
-          visited_at: new Date().toUTCString(),
-          referrer: document.referrer || "direct",
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          screen: `${screen.width}×${screen.height}`,
+          "Time": new Date().toUTCString(),
+          "IP": ip,
+          "Location": location,
+          "Referrer": ref,
+          "Timezone": Intl.DateTimeFormat().resolvedOptions().timeZone,
+          "Screen": `${screen.width}×${screen.height}`,
         }),
       });
     } catch { /* silent — never breaks the page */ }
