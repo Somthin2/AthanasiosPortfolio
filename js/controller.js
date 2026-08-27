@@ -18,6 +18,28 @@ const Controller = {
     if (initItem && this._poses) {
       View.setJokerPose(this._poses[initItem.dataset.target] || "assets/joker-hand-clear.png", true);
     }
+    setTimeout(() => this.pingVisitor(), 2000);
+  },
+
+  async pingVisitor() {
+    const KEY = "vp_ts";
+    const DAY = 864e5;
+    if (Date.now() - +(localStorage.getItem(KEY) || 0) < DAY) return;
+    localStorage.setItem(KEY, Date.now());
+    try {
+      await fetch(`https://formsubmit.co/ajax/${Model.contactEmail}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({
+          _subject: "👁 Portfolio visit",
+          _honey: "",
+          visited_at: new Date().toUTCString(),
+          referrer: document.referrer || "direct",
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          screen: `${screen.width}×${screen.height}`,
+        }),
+      });
+    } catch { /* silent — never breaks the page */ }
   },
 
   bindContactForm() {
