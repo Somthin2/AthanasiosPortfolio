@@ -21,6 +21,26 @@ const Controller = {
     setTimeout(() => this.pingVisitor(), 2000);
   },
 
+  /* POST to FormSubmit as plain form fields (a CORS "simple request": no preflight).
+     If the browser still can't read the reply, fire it again opaquely (no-cors) so it's delivered anyway.
+     Returns { ok: true|false|null, data } — null means "sent, but reply unreadable". */
+  async relay(fields) {
+    const url = `https://formsubmit.co/ajax/${Model.contactEmail}`;
+    const body = new URLSearchParams(fields);
+    try {
+      const res = await fetch(url, { method: "POST", headers: { Accept: "application/json" }, body, signal: AbortSignal.timeout(10000) });
+      const data = await res.json().catch(() => ({}));
+      return { ok: res.ok && String(data.success) === "true", data, status: res.status };
+    } catch (err) {
+      try {
+        await fetch(url, { method: "POST", mode: "no-cors", body, signal: AbortSignal.timeout(10000) });
+        return { ok: null, data: { note: "sent opaquely (CORS reply blocked)", err: err.message } };
+      } catch (err2) {
+        return { ok: false, data: { err: err2.message } };
+      }
+    }
+  },
+
   /* Visit alert: emails the owner at most once per browser per 24h.
      Add ?debug to the URL to bypass the 24h limit and log every step to the console. */
   async pingVisitor() {
@@ -58,33 +78,22 @@ const Controller = {
     try { if (document.referrer) ref = new URL(document.referrer).hostname; } catch { /* ignore */ }
     const source = params.get("ref") || ref;
 
-    try {
-      const res = await fetch(`https://formsubmit.co/ajax/${Model.contactEmail}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        signal: AbortSignal.timeout(10000),
-        body: JSON.stringify({
-          _subject: `👁 Portfolio visit${source !== "direct" ? ` via ${source}` : ""}`,
-          _honey: "",
-          _template: "table",
-          "Time": new Date().toUTCString(),
-          "IP": ip,
-          "Location": where || "—",
-          "Source": source,
-          "Referrer": ref,
-          "Page": location.href,
-          "Timezone": Intl.DateTimeFormat().resolvedOptions().timeZone,
-          "Screen": `${screen.width}×${screen.height}`,
-          "Browser": navigator.userAgent,
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-      log("formsubmit response:", res.status, data);
-      // Only start the 24h cooldown once the alert actually went through
-      if (res.ok && String(data.success) === "true") {
-        try { localStorage.setItem(KEY, Date.now()); } catch { /* ignore */ }
-      }
-    } catch (e) { log("formsubmit failed:", e.message); }
+    const r = await this.relay({
+      _subject: `👁 Portfolio visit${source !== "direct" ? ` via ${source}` : ""}`,
+      _template: "table",
+      "Time": new Date().toUTCString(),
+      "IP": ip,
+      "Location": where || "—",
+      "Source": source,
+      "Referrer": ref,
+      "Page": location.href,
+      "Timezone": Intl.DateTimeFormat().resolvedOptions().timeZone,
+      "Screen": `${screen.width}×${screen.height}`,
+      "Browser": navigator.userAgent,
+    });
+    log("formsubmit result:", r);
+    // Start the 24h cooldown only once the alert went out (null = sent, reply unreadable)
+    if (r.ok !== false) { try { localStorage.setItem(KEY, Date.now()); } catch { /* ignore */ } }
   },
 
   bindContactForm() {
@@ -104,17 +113,14 @@ const Controller = {
       btn.disabled = true;
       status.textContent = "Sending…";
       try {
-        const res = await fetch(`https://formsubmit.co/ajax/${Model.contactEmail}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Accept": "application/json" },
-          body: JSON.stringify({
-            name: data.name,
-            email: data.email,
-            message: data.message,
-            _subject: `Portfolio message from ${data.name}`,
-          }),
+        const r = await this.relay({
+          name: data.name,
+          email: data.email,
+          message: data.message,
+          _replyto: data.email,
+          _subject: `Portfolio message from ${data.name}`,
         });
-        if (!res.ok) throw new Error(res.status);
+        if (r.ok === false) throw new Error(JSON.stringify(r.data));
         status.textContent = "Sent. I'll get back to you.";
         form.reset();
         this.play();
