@@ -21,38 +21,70 @@ const Controller = {
     setTimeout(() => this.pingVisitor(), 2000);
   },
 
+  /* Visit alert: emails the owner at most once per browser per 24h.
+     Add ?debug to the URL to bypass the 24h limit and log every step to the console. */
   async pingVisitor() {
     const KEY = "vp_ts";
     const DAY = 864e5;
-    if (Date.now() - +(localStorage.getItem(KEY) || 0) < DAY) return;
-    localStorage.setItem(KEY, Date.now());
+    const params = new URLSearchParams(location.search);
+    const debug = params.has("debug");
+    const log = (...a) => debug && console.log("[visit-ping]", ...a);
+
+    let last = 0;
+    try { last = +(localStorage.getItem(KEY) || 0); } catch { /* storage blocked */ }
+    if (!debug && Date.now() - last < DAY) return log("skipped: already pinged in the last 24h");
+
+    const getJSON = async (url) => {
+      const res = await fetch(url, { signal: AbortSignal.timeout(4000) });
+      if (!res.ok) throw new Error(`${url} → HTTP ${res.status}`);
+      return res.json();
+    };
+
+    // Geo lookup: try two free providers; failure never blocks the ping
+    let ip = "—", where = "—";
     try {
-      let ip = "—", location = "—";
+      const g = await getJSON("https://ipapi.co/json/");
+      if (g.error) throw new Error(g.reason || "ipapi error");
+      ip = g.ip; where = [g.city, g.region, g.country_name].filter(Boolean).join(", ");
+    } catch (e1) {
+      log("ipapi failed:", e1.message);
       try {
-        const geo = await (await fetch("https://ipapi.co/json/")).json();
-        ip = geo.ip ?? "—";
-        location = [geo.city, geo.region, geo.country_name].filter(Boolean).join(", ") || "—";
-      } catch { /* geo failed, still send ping */ }
+        const g = await getJSON("https://ipwho.is/");
+        ip = g.ip ?? "—"; where = [g.city, g.region, g.country].filter(Boolean).join(", ") || "—";
+      } catch (e2) { log("ipwho.is failed:", e2.message); }
+    }
 
-      const ref = document.referrer
-        ? new URL(document.referrer).hostname
-        : "direct";
+    let ref = "direct";
+    try { if (document.referrer) ref = new URL(document.referrer).hostname; } catch { /* ignore */ }
+    const source = params.get("ref") || ref;
 
-      await fetch(`https://formsubmit.co/ajax/${Model.contactEmail}`, {
+    try {
+      const res = await fetch(`https://formsubmit.co/ajax/${Model.contactEmail}`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
+        signal: AbortSignal.timeout(10000),
         body: JSON.stringify({
-          _subject: "👁 Portfolio visit",
+          _subject: `👁 Portfolio visit${source !== "direct" ? ` via ${source}` : ""}`,
           _honey: "",
+          _template: "table",
           "Time": new Date().toUTCString(),
           "IP": ip,
-          "Location": location,
+          "Location": where || "—",
+          "Source": source,
           "Referrer": ref,
+          "Page": location.href,
           "Timezone": Intl.DateTimeFormat().resolvedOptions().timeZone,
           "Screen": `${screen.width}×${screen.height}`,
+          "Browser": navigator.userAgent,
         }),
       });
-    } catch { /* silent — never breaks the page */ }
+      const data = await res.json().catch(() => ({}));
+      log("formsubmit response:", res.status, data);
+      // Only start the 24h cooldown once the alert actually went through
+      if (res.ok && String(data.success) === "true") {
+        try { localStorage.setItem(KEY, Date.now()); } catch { /* ignore */ }
+      }
+    } catch (e) { log("formsubmit failed:", e.message); }
   },
 
   bindContactForm() {
