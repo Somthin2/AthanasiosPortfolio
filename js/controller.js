@@ -21,24 +21,45 @@ const Controller = {
     setTimeout(() => this.pingVisitor(), 2000);
   },
 
-  /* POST to FormSubmit as plain form fields (a CORS "simple request": no preflight).
-     If the browser still can't read the reply, fire it again opaquely (no-cors) so it's delivered anyway.
-     Returns { ok: true|false|null, data } — null means "sent, but reply unreadable". */
+  /* Email relay: Web3Forms first (reliable CORS), FormSubmit as fallback.
+     Fields use FormSubmit-style names (_subject, _replyto); mapped for Web3Forms.
+     Returns { ok: true|false|null, via, data } — null = sent, reply unreadable. */
+  WEB3FORMS_KEY: "ff7fc382-1107-4b0d-9eb3-233bff231407",
+
   async relay(fields) {
+    const tries = [];
+    if (!this.WEB3FORMS_KEY.startsWith("__")) {
+      const fd = new FormData();
+      fd.append("access_key", this.WEB3FORMS_KEY);
+      fd.append("from_name", "Portfolio");
+      for (const [k, v] of Object.entries(fields)) {
+        if (k === "_subject") fd.append("subject", v);
+        else if (k === "_replyto") fd.append("replyto", v);
+        else if (!k.startsWith("_")) fd.append(k, v);
+      }
+      try {
+        const res = await fetch("https://api.web3forms.com/submit", { method: "POST", body: fd, signal: AbortSignal.timeout(10000) });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.success) return { ok: true, via: "web3forms", data };
+        tries.push({ via: "web3forms", status: res.status, data });
+      } catch (e) { tries.push({ via: "web3forms", err: e.message }); }
+    }
+    // Fallback: FormSubmit as plain form fields (no CORS preflight)
     const url = `https://formsubmit.co/ajax/${Model.contactEmail}`;
     const body = new URLSearchParams(fields);
     try {
       const res = await fetch(url, { method: "POST", headers: { Accept: "application/json" }, body, signal: AbortSignal.timeout(10000) });
       const data = await res.json().catch(() => ({}));
-      return { ok: res.ok && String(data.success) === "true", data, status: res.status };
-    } catch (err) {
+      if (res.ok && String(data.success) === "true") return { ok: true, via: "formsubmit", data };
+      tries.push({ via: "formsubmit", status: res.status, data });
+    } catch (e) {
+      tries.push({ via: "formsubmit", err: e.message });
       try {
         await fetch(url, { method: "POST", mode: "no-cors", body, signal: AbortSignal.timeout(10000) });
-        return { ok: null, data: { note: "sent opaquely (CORS reply blocked)", err: err.message } };
-      } catch (err2) {
-        return { ok: false, data: { err: err2.message } };
-      }
+        return { ok: null, via: "formsubmit-opaque", data: tries };
+      } catch (e2) { tries.push({ via: "formsubmit-opaque", err: e2.message }); }
     }
+    return { ok: false, data: tries };
   },
 
   /* Visit alert: emails the owner at most once per browser per 24h.
