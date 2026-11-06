@@ -31,7 +31,7 @@ const Controller = {
     if (!this.WEB3FORMS_KEY.startsWith("__")) {
       const fd = new FormData();
       fd.append("access_key", this.WEB3FORMS_KEY);
-      fd.append("from_name", "Portfolio");
+      fd.append("from_name", "Portfolio Radar");
       for (const [k, v] of Object.entries(fields)) {
         if (k === "_subject") fd.append("subject", v);
         else if (k === "_replyto") fd.append("replyto", v);
@@ -65,15 +65,15 @@ const Controller = {
   /* Visit alert: emails the owner at most once per browser per 24h.
      Add ?debug to the URL to bypass the 24h limit and log every step to the console. */
   async pingVisitor() {
-    const KEY = "vp_ts";
+    const KEY = "vp_ts", COUNT = "vp_n";
     const DAY = 864e5;
     const params = new URLSearchParams(location.search);
     const debug = params.has("debug");
     const log = (...a) => debug && console.log("[visit-ping]", ...a);
+    const store = { get: k => { try { return localStorage.getItem(k); } catch { return null; } },
+                    set: (k, v) => { try { localStorage.setItem(k, v); } catch { /* ignore */ } } };
 
-    let last = 0;
-    try { last = +(localStorage.getItem(KEY) || 0); } catch { /* storage blocked */ }
-    if (!debug && Date.now() - last < DAY) return log("skipped: already pinged in the last 24h");
+    if (!debug && Date.now() - +(store.get(KEY) || 0) < DAY) return log("skipped: already pinged in the last 24h");
 
     const getJSON = async (url) => {
       const res = await fetch(url, { signal: AbortSignal.timeout(4000) });
@@ -81,41 +81,68 @@ const Controller = {
       return res.json();
     };
 
-    // Geo lookup: try two free providers; failure never blocks the ping
-    let ip = "—", where = "—";
+    // ── Geo lookup (two free providers; failure never blocks the alert)
+    let geo = {};
     try {
       const g = await getJSON("https://ipapi.co/json/");
       if (g.error) throw new Error(g.reason || "ipapi error");
-      ip = g.ip; where = [g.city, g.region, g.country_name].filter(Boolean).join(", ");
+      geo = { ip: g.ip, city: g.city, region: g.region, country: g.country_name, cc: g.country_code,
+              org: g.org, lat: g.latitude, lon: g.longitude };
     } catch (e1) {
       log("ipapi failed:", e1.message);
       try {
         const g = await getJSON("https://ipwho.is/");
-        ip = g.ip ?? "—"; where = [g.city, g.region, g.country].filter(Boolean).join(", ") || "—";
+        geo = { ip: g.ip, city: g.city, region: g.region, country: g.country, cc: g.country_code,
+                org: g.connection?.org || g.connection?.isp, lat: g.latitude, lon: g.longitude };
       } catch (e2) { log("ipwho.is failed:", e2.message); }
     }
+    const flag = geo.cc ? String.fromCodePoint(...[...geo.cc.toUpperCase()].map(c => 0x1F1A5 + c.charCodeAt(0))) : "🌐";
+    const place = [geo.city, geo.country].filter(Boolean).join(", ") || "Unknown location";
 
-    let ref = "direct";
-    try { if (document.referrer) ref = new URL(document.referrer).hostname; } catch { /* ignore */ }
-    const source = params.get("ref") || ref;
+    // ── Where they came from
+    let ref = "";
+    try { if (document.referrer) ref = new URL(document.referrer).hostname.replace(/^www\./, ""); } catch { /* ignore */ }
+    const tag = params.get("ref");
+    const SOURCES = { github: "GitHub", "github.com": "GitHub", linkedin: "LinkedIn", "linkedin.com": "LinkedIn",
+                      "lnkd.in": "LinkedIn", cv: "CV / résumé", "google.com": "Google search", "t.co": "X / Twitter" };
+    const source = SOURCES[tag] || SOURCES[ref] || tag || ref || "Direct / bookmark";
+
+    // ── Device, readable
+    const ua = navigator.userAgent;
+    const browser = /Edg\//.test(ua) ? "Edge" : /OPR\//.test(ua) ? "Opera" : /Firefox\//.test(ua) ? "Firefox"
+                  : /Chrome\//.test(ua) ? "Chrome" : /Safari\//.test(ua) ? "Safari" : "Unknown browser";
+    const os = /iPhone|iPad/.test(ua) ? "iOS" : /Android/.test(ua) ? "Android" : /Mac OS X/.test(ua) ? "macOS"
+             : /Windows/.test(ua) ? "Windows" : /Linux/.test(ua) ? "Linux" : "Unknown OS";
+    const mobile = /Mobi|iPhone|Android/.test(ua);
+
+    // ── Returning visitor?
+    const n = +(store.get(COUNT) || 0) + 1;
+    const ord = n === 1 ? "First visit 🆕" : `Returning — visit #${n} 🔁`;
+
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const fmt = (zone) => new Date().toLocaleString("en-GB", { timeZone: zone, weekday: "short", day: "numeric",
+                            month: "short", hour: "2-digit", minute: "2-digit" });
 
     const r = await this.relay({
-      _subject: `👁 Portfolio visit${source !== "direct" ? ` via ${source}` : ""}`,
-      _template: "table",
-      "Time": new Date().toUTCString(),
-      "IP": ip,
-      "Location": where || "—",
-      "Source": source,
-      "Referrer": ref,
-      "Page": location.href,
-      "Timezone": Intl.DateTimeFormat().resolvedOptions().timeZone,
-      "Screen": `${screen.width}×${screen.height}`,
-      "Browser": navigator.userAgent,
+      _subject: `Portfolio visitor from ${place}${source !== "Direct / bookmark" ? ` · via ${source}` : ""}`,
+      "🎯 Visitor": `${flag} ${place}${n > 1 ? " (returning)" : ""}`,
+      "🔗 Came from": source,
+      "🏢 Network / organisation": geo.org || "—",
+      "🗺️ Location": [geo.city, geo.region, geo.country].filter(Boolean).join(", ") || "—",
+      "📍 Map": geo.lat != null ? `https://www.google.com/maps?q=${geo.lat},${geo.lon}` : "—",
+      "💻 Device": `${browser} on ${os} · ${mobile ? "📱 mobile" : "🖥️ desktop"} · ${screen.width}×${screen.height}`,
+      "🗣️ Language": navigator.language || "—",
+      "🔁 History": ord,
+      "🕒 Your time (Klagenfurt)": fmt("Europe/Vienna"),
+      "🕓 Their local time": `${fmt(tz)} (${tz})`,
+      "🌐 IP address": geo.ip || "—",
+      "📄 Page": location.href,
     });
     log("formsubmit result:", r);
     // Start the 24h cooldown only once the alert went out (null = sent, reply unreadable)
-    if (r.ok !== false) { try { localStorage.setItem(KEY, Date.now()); } catch { /* ignore */ } }
+    if (r.ok !== false) { store.set(KEY, Date.now()); store.set(COUNT, n); }
   },
+
 
   bindContactForm() {
     const form = document.getElementById("contact-form");
@@ -140,6 +167,7 @@ const Controller = {
           message: data.message,
           _replyto: data.email,
           _subject: `Portfolio message from ${data.name}`,
+          "💬 Sent from": "Portfolio contact form",
         });
         if (r.ok === false) throw new Error(JSON.stringify(r.data));
         status.textContent = "Sent. I'll get back to you.";
