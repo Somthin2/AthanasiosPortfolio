@@ -23,7 +23,9 @@ const Controller = {
 
   /* Email relay: Web3Forms first (reliable CORS), FormSubmit as fallback.
      Fields use FormSubmit-style names (_subject, _replyto); mapped for Web3Forms.
-     Returns { ok: true|false|null, via, data } — null = sent, reply unreadable. */
+     Returns { ok: true|false|null, via, data } — null = sent, reply unreadable.
+     Field names must stay plain ASCII: Web3Forms garbles emoji in field names
+     (values are fine), so keep emoji out of the keys. */
   WEB3FORMS_KEY: "ff7fc382-1107-4b0d-9eb3-233bff231407",
 
   async relay(fields) {
@@ -125,18 +127,18 @@ const Controller = {
 
     const r = await this.relay({
       _subject: `Portfolio visitor from ${place}${source !== "Direct / bookmark" ? ` · via ${source}` : ""}`,
-      "🎯 Visitor": `${flag} ${place}${n > 1 ? " (returning)" : ""}`,
-      "🔗 Came from": source,
-      "🏢 Network / organisation": geo.org || "—",
-      "🗺️ Location": [geo.city, geo.region, geo.country].filter(Boolean).join(", ") || "—",
-      "📍 Map": geo.lat != null ? `https://www.google.com/maps?q=${geo.lat},${geo.lon}` : "—",
-      "💻 Device": `${browser} on ${os} · ${mobile ? "📱 mobile" : "🖥️ desktop"} · ${screen.width}×${screen.height}`,
-      "🗣️ Language": navigator.language || "—",
-      "🔁 History": ord,
-      "🕒 Your time (Klagenfurt)": fmt("Europe/Vienna"),
-      "🕓 Their local time": `${fmt(tz)} (${tz})`,
-      "🌐 IP address": geo.ip || "—",
-      "📄 Page": location.href,
+      "Visitor": `${flag} ${place}${n > 1 ? " (returning)" : ""}`,
+      "Came from": source,
+      "Network / organisation": geo.org || "—",
+      "Location": [geo.city, geo.region, geo.country].filter(Boolean).join(", ") || "—",
+      "Map": geo.lat != null ? `https://www.google.com/maps?q=${geo.lat},${geo.lon}` : "—",
+      "Device": `${browser} on ${os} · ${mobile ? "📱 mobile" : "🖥️ desktop"} · ${screen.width}×${screen.height}`,
+      "Language": navigator.language || "—",
+      "History": ord,
+      "Your time (Klagenfurt)": fmt("Europe/Vienna"),
+      "Their local time": `${fmt(tz)} (${tz})`,
+      "IP address": geo.ip || "—",
+      "Page": location.href,
     });
     log("formsubmit result:", r);
     // Start the 24h cooldown only once the alert went out (null = sent, reply unreadable)
@@ -167,7 +169,7 @@ const Controller = {
           message: data.message,
           _replyto: data.email,
           _subject: `Portfolio message from ${data.name}`,
-          "💬 Sent from": "Portfolio contact form",
+          "Sent from": "Portfolio contact form",
         });
         if (r.ok === false) throw new Error(JSON.stringify(r.data));
         status.textContent = "Sent. I'll get back to you.";
