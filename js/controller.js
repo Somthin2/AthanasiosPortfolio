@@ -214,7 +214,9 @@ const Controller = {
   },
 
   loadProjects() {
+    View.renderStats(Model.stats);
     View.renderFeatured(Model.featured);
+    View.renderOps(Model.ops);
   },
 
   loadSkills() {
@@ -222,7 +224,6 @@ const Controller = {
       View.renderSkills(Model.skills);
       Model.state.skillsBuilt = true;
     }
-    View.animateSkillBars();
   },
 
   play() {

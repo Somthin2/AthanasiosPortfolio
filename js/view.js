@@ -12,8 +12,8 @@ const View = {
     menuItems:  [],
     wipe:       document.getElementById("wipe"),
     featGrid:   document.getElementById("feat-grid"),
-    repoGrid:   document.getElementById("repo-grid"),
-    repoStatus: document.getElementById("repo-status"),
+    opsGrid:    document.getElementById("ops-grid"),
+    stats:      document.getElementById("stats"),
     skillsBody: document.getElementById("skills-body"),
     sfx:        document.getElementById("sfx-select"),
     cursor:     document.getElementById("cursor"),
@@ -121,61 +121,49 @@ const View = {
     });
   },
 
-  renderRepos(repos, statusText, model) {
-    this.els.repoStatus.textContent = statusText;
-    this.els.repoGrid.innerHTML = "";
-    repos.forEach((r, i) => {
-      const a = document.createElement("a");
-      a.className = "card";
-      a.href = r.html_url; a.target = "_blank"; a.rel = "noopener";
-      a.style.setProperty("--tilt", ((this.hash(r.name) % 5) - 2) * 0.8 + "deg");
-      a.style.setProperty("--d", i * 70 + "ms");
-      a.style.setProperty("--lc", model.langColors[r.language] || "#e60012");
-      const pretty = r.name.replace(/[-_]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
-      const img = model.projectImages[r.name] || `assets/projects/${r.name}.png`;
-      a.innerHTML = `
-        ${this.cardThumb(img)}
-        <span class="lang">${r.language || "Repo"}</span>
-        <h3>${this.splitTitle(pretty)}</h3>
-        <p>${r.description || "No description yet."}</p>
-        <div class="meta">
-          <span>★ ${r.stargazers_count || 0}</span>
-          <span class="go">View on GitHub →</span>
-        </div>`;
-      this.els.repoGrid.appendChild(a);
+  renderStats(stats) {
+    if (this.els.stats.childElementCount) return;
+    stats.forEach((st, i) => {
+      const d = document.createElement("div");
+      d.className = "stat";
+      d.style.setProperty("--tilt", ((this.hash(st.big) % 5) - 2) * 0.9 + "deg");
+      d.style.setProperty("--d", i * 60 + "ms");
+      d.innerHTML = `<span class="big display">${st.big}</span><span class="small">${st.small}</span>`;
+      this.els.stats.appendChild(d);
+    });
+  },
+
+  renderOps(ops) {
+    if (this.els.opsGrid.childElementCount) return;
+    ops.forEach((o, i) => {
+      const d = document.createElement("article");
+      d.className = "card op";
+      d.style.setProperty("--tilt", ((this.hash(o.title) % 5) - 2) * 0.6 + "deg");
+      d.style.setProperty("--d", 160 + i * 70 + "ms");
+      d.innerHTML = `
+        <span class="lang">${o.tag}</span>
+        <h3>${this.splitTitle(o.title)}</h3>
+        <p>${o.desc}</p>`;
+      this.els.opsGrid.appendChild(d);
     });
   },
 
   renderSkills(groups) {
-    groups.forEach(g => {
-      const div = document.createElement("div");
+    groups.forEach((g, gi) => {
+      const div = document.createElement("section");
       div.className = "skill-group";
-      div.innerHTML = `<h3>${g.group}</h3>`;
-      g.items.forEach(([name, value]) => {
-        const row = document.createElement("div");
-        row.className = "skill-row";
-        row.innerHTML = `
-          <span class="name">${name}</span>
-          <div class="skill-bar"><div class="fill" data-v="${value}"></div></div>
-          <span class="lv">${value}</span>`;
-        div.appendChild(row);
-      });
+      div.style.setProperty("--d", gi * 90 + "ms");
+      const chips = g.items.map(([name, key], i) =>
+        `<li class="chip${key ? " key" : ""}" style="--i:${i}"><span>${name}</span></li>`).join("");
+      div.innerHTML = `<h3>${g.group}</h3><ul class="chips">${chips}</ul>`;
       this.els.skillsBody.appendChild(div);
     });
-  },
-
-  animateSkillBars() {
-    const fills = this.els.skillsBody.querySelectorAll(".fill");
-    fills.forEach(f => { f.style.width = "0"; });
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      fills.forEach((f, i) => setTimeout(() => { f.style.width = f.dataset.v + "%"; }, i * 60));
-    }));
   },
 
   startClock() {
     const tick = () => {
       this.els.clock.textContent =
-        new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + " · CY";
+        new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Vienna" }) + " · KLU";
     };
     tick();
     setInterval(tick, 1000);

@@ -11,7 +11,6 @@ const Model = {
   state: {
     screen: "home",
     menuIndex: 0,
-    reposLoaded: false,
     skillsBuilt: false,
   },
 
@@ -34,88 +33,43 @@ const Model = {
     },
   ],
 
-  featuredRepoNames: [],
-
-  fallbackRepos: [
-    {
-      name: "COMP-431-Email-Security",
-      language: "Shell", stargazers_count: 0,
-      html_url: "https://github.com/Somthin2",
-      description: "Mail server + phishing campaign infrastructure on a custom domain (comp431.dedyn.io). DNS via deSEC, DKIM key gen, GoPhish deployment with SPF/DKIM/DMARC hardening.",
-    },
-    {
-      name: "M365-Phishing-Simulation",
-      language: "Python", stargazers_count: 0,
-      html_url: "https://github.com/Somthin2",
-      description: "Microsoft 365 phishing template for Catalink's GoPhish instance with full SPF/DKIM/DMARC stack. Deployed over SSH tunnel to an internal relay.",
-    },
-    {
-      name: "WiFi-Pentesting-Lab",
-      language: "Shell", stargazers_count: 0,
-      html_url: "https://github.com/Somthin2",
-      description: "WPA2 cracking lab on Kali Linux with an Alfa AWUS036ACM adapter. Practiced with hashcat and aircrack-ng against a controlled home network.",
-    },
-    {
-      name: "PortSwigger-Labs",
-      language: "Python", stargazers_count: 0,
-      html_url: "https://github.com/Somthin2",
-      description: "Writeups and automation scripts for all 52 PortSwigger Server-Side Vulnerabilities labs — SQLi, SSRF, path traversal, access control, OS command injection, file upload exploits.",
-    },
+  /* Track-record stickers shown above the project cards */
+  stats: [
+    { big: "IEEE",    small: "Paper accepted · CSNet'26" },
+    { big: "52/52",   small: "PortSwigger server-side labs" },
+    { big: "#241",    small: "of 1,200 · HackTheBox CTF" },
+    { big: "H1 + IGT", small: "Active on HackerOne & Intigriti" },
   ],
 
-  projectImages: {},
+  /* Smaller projects — shown as cards without links */
+  ops: [
+    { title: "Email Security Infrastructure", tag: "Coursework · COMP-431",
+      desc: "Mail server and phishing-campaign infrastructure on a custom domain (comp431.dedyn.io): DNS via deSEC, DKIM key generation, GoPhish deployment hardened with SPF, DKIM and DMARC." },
+    { title: "M365 Phishing Simulation", tag: "Catalink · Red team",
+      desc: "Microsoft 365 phishing template for an internal GoPhish instance with a full SPF/DKIM/DMARC stack, deployed over an SSH tunnel to an internal relay." },
+    { title: "WiFi Pentesting Lab", tag: "Home lab",
+      desc: "WPA2 cracking lab on Kali Linux with an Alfa AWUS036ACM adapter — hashcat and aircrack-ng against a controlled home network." },
+    { title: "PortSwigger Server-Side Track", tag: "Web security",
+      desc: "Completed all 52 Server-Side Vulnerabilities labs — SQLi, SSRF, path traversal, access control, OS command injection and file-upload exploits." },
+  ],
 
-  langColors: {
-    JavaScript: "#f1e05a", TypeScript: "#3178c6", Python: "#3572A5",
-    PHP: "#4F5D95", CSS: "#663399", HTML: "#e34c26",
-    Shell: "#89e051", "Jupyter Notebook": "#DA5B0B", MATLAB: "#e16737",
-    Java: "#b07219", C: "#555", "C++": "#f34b7d",
-  },
-
+  /* key: true = signature skill (highlighted red) */
   skills: [
     { group: "Offensive Security", items: [
-      ["Web App Pentesting", 90],
-      ["Bug Bounty Hunting", 85],
-      ["SQLi · SSRF · Path Traversal", 88],
-      ["Access Control & Auth Bypass", 86],
-      ["OS Command Injection", 82],
-      ["Burp Suite", 88],
+      ["Web App Pentesting", true], ["Bug Bounty Hunting", true], ["Burp Suite", true],
+      ["SQL Injection"], ["SSRF"], ["Path Traversal"], ["Access Control & Auth Bypass"],
+      ["OS Command Injection"], ["subfinder · httpx · nuclei"], ["hashcat · aircrack-ng"],
     ]},
     { group: "Defensive & SIEM Ops", items: [
-      ["Wazuh SIEM Administration", 85],
-      ["Incident Response & Log Recovery", 82],
-      ["Suricata IDS", 80],
-      ["Phishing Simulation (GoPhish)", 78],
-      ["SPF · DKIM · DMARC", 80],
-      ["iptables · ipset", 80],
-      ["WireGuard VPN", 78],
+      ["Wazuh SIEM", true], ["Suricata IDS", true], ["Incident Response"],
+      ["Log Recovery"], ["GoPhish"], ["SPF · DKIM · DMARC"], ["iptables · ipset"], ["WireGuard"],
     ]},
-    { group: "Cryptography & Recon Tools", items: [
-      ["Post-Quantum Cryptography (ML-KEM-768)", 92],
-      ["Signal Protocol", 75],
-      ["subfinder · httpx · nuclei", 84],
-      ["hashcat · aircrack-ng", 80],
-      ["Kali Linux · HTB (241st/1,200 CTF)", 88],
+    { group: "Cryptography & Research", items: [
+      ["Post-Quantum Crypto (ML-KEM-768)", true], ["Signal Protocol"],
+      ["Hybrid Key Exchange"], ["IEEE Publication"],
     ]},
     { group: "Programming & Infrastructure", items: [
-      ["Python", 82],
-      ["Linux · Bash", 86],
-      ["TypeScript", 78],
-      ["Docker", 72],
+      ["Python", true], ["Linux · Bash", true], ["TypeScript"], ["Docker"], ["Kali Linux"],
     ]},
   ],
-
-  async fetchRepos() {
-    const skip = new Set(this.featuredRepoNames);
-    try {
-      const res = await fetch(
-        `https://api.github.com/users/${this.githubUser}/repos?per_page=100&sort=updated`
-      );
-      if (!res.ok) throw new Error(res.status);
-      const repos = (await res.json()).filter(r => !r.fork && !skip.has(r.name));
-      return { repos, live: true };
-    } catch {
-      return { repos: this.fallbackRepos.filter(r => !skip.has(r.name)), live: false };
-    }
-  },
 };
