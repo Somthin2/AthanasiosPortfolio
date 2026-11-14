@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Barlow+Condensed:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=20261114c">
+<link rel="stylesheet" href="css/style.css?v=20261114d">
 </head>
 <body data-screen="home">
 <a href="#stage" class="skip-link">Skip to content</a>
@@ -61,25 +61,21 @@
 
 <!-- P5R-style sticker labels (home screen only) -->
 <div id="deco-stickers" aria-hidden="true">
+  <div class="deco-sticker s-info">
+    <div class="st-label">PT / SYS</div>
+    <div class="st-main"><span class="ransom" data-ransom="PORTFOLIO"></span></div>
+    <div class="st-sub">SELECT A SECTION ▶</div>
+  </div>
+  <div class="deco-sticker s-tag">
+    <span class="ransom" data-ransom="NAVIGATE"></span>
+  </div>
   <div class="deco-sticker s-flavor">DON'T LOOK AWAY</div>
+  <div class="deco-sticker s-num">2 0 2 6</div>
 </div>
 
 <!-- Hero art -->
 <div id="hero-wrap" aria-hidden="true">
-  <div id="card-stage">
-    <svg class="cc-burst" viewBox="-100 -100 200 200" width="0" height="0"><polygon id="cc-burst-a"/><polygon id="cc-burst-b"/></svg>
-    <div class="cc-shadow">
-      <div id="calling-card">
-        <div class="cc-band"></div>
-        <div class="cc-top"><span>PT / SYS</span><span>Calling card · Nº 0241</span></div>
-        <div class="cc-mono"><span class="ransom" data-ransom="AP"></span></div>
-        <p class="cc-msg">Your systems are hiding a flaw.<br>
-          I will <span class="hl">find it</span> before anyone else does.</p>
-        <div class="cc-sign"><span class="ransom" data-ransom="— THANOS"></span></div>
-        <div class="cc-foot">Security research · Klagenfurt</div>
-      </div>
-    </div>
-  </div>
+  <img class="hero-pose" id="hero-a" src="assets/joker-hand-clear.png" alt="" width="1588" height="1745">
 </div>
 <!-- P5R-style slash that sweeps over the hero on pose change -->
 <div id="hero-flash" aria-hidden="true"></div>
@@ -238,8 +234,8 @@
   </div>
 </div>
 
-<script src="js/model.js?v=20261114c" defer></script>
-<script src="js/view.js?v=20261114c" defer></script>
-<script src="js/controller.js?v=20261114c" defer></script>
+<script src="js/model.js?v=20261114d" defer></script>
+<script src="js/view.js?v=20261114d" defer></script>
+<script src="js/controller.js?v=20261114d" defer></script>
 </body>
 </html>

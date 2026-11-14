@@ -205,10 +205,8 @@ const Controller = {
     const n = View.els.menuItems.length;
     const next = (index + n) % n;
     if (next !== Model.state.menuIndex) this.play();
-    const changed = next !== Model.state.menuIndex;
     Model.state.menuIndex = next;
     View.setMenuSelection(next);
-    if (changed) View.cardHit();
     if (this._poses) {
       const target = View.els.menuItems[next].dataset.target;
       View.setJokerPose(this._poses[target] || "assets/joker-hand-clear.png", false, false);

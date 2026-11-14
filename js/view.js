@@ -29,7 +29,6 @@ const View = {
     this.els.menuItems = [...document.querySelectorAll(".menu-item")];
     document.querySelectorAll("[data-ransom]").forEach(el => this.ransomize(el));
     if (this.els.sfx) this.els.sfx.volume = 0.45;
-    this.buildCallingCard();
     this.startClock();
     this.startParallax();
     this.startCursor();
@@ -161,42 +160,6 @@ const View = {
     });
   },
 
-  /* Original "calling card" hero: jagged starburst + torn-paper card */
-  buildCallingCard() {
-    const star = (id, spikes, rOut, rIn, seed) => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      const pts = [];
-      for (let i = 0; i < spikes * 2; i++) {
-        const j = (this.hash(seed + i) % 100) / 100;
-        const r = i % 2 ? rIn + j * 8 : rOut - j * 22;
-        const a = (Math.PI * i) / spikes + j * 0.08;
-        pts.push((Math.cos(a) * r).toFixed(1) + "," + (Math.sin(a) * r).toFixed(1));
-      }
-      el.setAttribute("points", pts.join(" "));
-    };
-    star("cc-burst-a", 22, 100, 58, "a");
-    star("cc-burst-b", 22, 86, 50, "b");
-
-    const card = document.getElementById("calling-card");
-    if (!card) return;
-    const edge = [], step = 4;
-    const jag = k => ((this.hash("t" + k) % 100) / 100) * 2.6;
-    for (let x = 0; x <= 100; x += step) edge.push(`${x}% ${jag(x).toFixed(2)}%`);
-    for (let y = step; y <= 100; y += step) edge.push(`${(100 - jag(y + 300)).toFixed(2)}% ${y}%`);
-    for (let x = 100 - step; x >= 0; x -= step) edge.push(`${x}% ${(100 - jag(x + 600)).toFixed(2)}%`);
-    for (let y = 100 - step; y > 0; y -= step) edge.push(`${jag(y + 900).toFixed(2)}% ${y}%`);
-    card.style.clipPath = `polygon(${edge.join(",")})`;
-  },
-
-  cardHit() {
-    const st = document.getElementById("card-stage");
-    if (!st || this.reducedMotion) return;
-    st.classList.remove("hit"); void st.offsetWidth; st.classList.add("hit");
-    const fl = this.els.heroFlash;
-    fl.classList.remove("active"); void fl.offsetWidth; fl.classList.add("active");
-  },
-
   startClock() {
     const tick = () => {
       this.els.clock.textContent =
@@ -211,7 +174,6 @@ const View = {
     const stripes = document.getElementById("bg-stripes");
     const halftone = document.getElementById("bg-halftone");
     const arts = [...document.querySelectorAll(".menu-art")];
-    const stage = document.getElementById("card-stage");
     let tx = 0, ty = 0, cx = 0, cy = 0;
     addEventListener("mousemove", e => {
       tx = e.clientX / innerWidth - 0.5;
@@ -221,10 +183,6 @@ const View = {
       cx += (tx - cx) * 0.06; cy += (ty - cy) * 0.06;
       stripes.style.transform = `translate(${cx * 22}px, ${cy * 14}px)`;
       halftone.style.transform = `translate(${cx * -34}px, ${cy * -22}px)`;
-      if (stage) {
-        stage.style.setProperty("--rx", (cx * 16).toFixed(2) + "deg");
-        stage.style.setProperty("--ry", (cy * -12).toFixed(2) + "deg");
-      }
       arts.forEach(a => {
         if (a.isConnected)
           a.style.transform = `translate(${cx * 14}px, ${cy * 9}px) scale(1.04)`;
