@@ -506,42 +506,77 @@ body[data-screen]:not([data-screen="home"]) #hero-wrap{
   transform:translateX(60%) skewX(-6deg);opacity:0;
 }
 
-.hero-pose{
-  position:absolute;right:-1vw;bottom:-2vh;
-  height:min(98vh,980px);max-width:54vw;
-  object-fit:contain;object-position:bottom right;
-  will-change:transform,filter;
-  filter:brightness(0) invert(.96) drop-shadow(-10px 8px 0 var(--red));
-  animation:jokerFloat 7s ease-in-out infinite, jokerGlow 4.5s ease-in-out 1s infinite;
+/* ---------- CALLING CARD HERO ---------- */
+#card-stage{
+  --rx:0deg;--ry:0deg;
+  position:absolute;right:8vw;top:52%;
+  width:min(27vw,420px,58vh);aspect-ratio:5/7;
+  transform:translateY(-50%) perspective(1100px) rotateY(var(--rx)) rotateX(var(--ry)) rotate(-7deg);
+  transform-style:preserve-3d;
 }
-@keyframes jokerFloat{
-  0%,100%{transform:translateY(0);}
-  40%{transform:translateY(-18px);}
-  70%{transform:translateY(-7px);}
+.cc-burst{
+  position:absolute;left:50%;top:50%;width:175%;height:175%;
+  transform:translate(-50%,-50%);overflow:visible;
+  animation:spin 80s linear infinite;
 }
-@keyframes jokerGlow{
-  0%,100%{
-    filter:brightness(0) invert(.96)
-      drop-shadow(-10px 8px 0 var(--red))
-      drop-shadow(-4px 3px 0 var(--black))
-      drop-shadow(0 0 18px rgba(230,0,18,.35));
-  }
-  50%{
-    filter:brightness(0) invert(.96)
-      drop-shadow(-13px 10px 0 var(--red))
-      drop-shadow(-4px 3px 0 var(--black))
-      drop-shadow(0 0 34px rgba(230,0,18,.6));
-  }
+#cc-burst-a{fill:var(--black);stroke:var(--red);stroke-width:1.4;}
+#cc-burst-b{fill:var(--red);opacity:.9;transform:rotate(8deg);}
+.cc-shadow{
+  position:absolute;inset:0;
+  filter:drop-shadow(16px 16px 0 var(--black)) drop-shadow(0 0 30px rgba(230,0,18,.45));
+  animation:cardFloat 7s ease-in-out infinite;
 }
-
-/* Burst-in reveal: Joker rises from below after flash uncovers new pose */
-.hero-pose.burst{
-  animation:jokerBurst .5s cubic-bezier(0.2,0,0.25,1.1) forwards;
+@keyframes cardFloat{0%,100%{transform:translateY(0) rotate(0);}45%{transform:translateY(-14px) rotate(.8deg);}75%{transform:translateY(-5px) rotate(-.4deg);}}
+#calling-card{
+  position:absolute;inset:0;overflow:hidden;
+  background:
+    radial-gradient(circle, rgba(0,0,0,.09) 1.2px, transparent 1.3px) 0 0/9px 9px,
+    var(--white);
+  color:var(--black);
+  padding:9% 9% 8%;
+  display:flex;flex-direction:column;
 }
-@keyframes jokerBurst{
-  0%{transform:translateY(42px) scale(.93);opacity:0;}
-  55%{opacity:1;}
-  100%{transform:translateY(0) scale(1);opacity:1;}
+.cc-band{
+  position:absolute;left:-20%;right:-20%;top:57%;height:15%;
+  background:var(--red);transform:rotate(-14deg);
+  box-shadow:0 -7px 0 var(--black), 0 7px 0 var(--black);
+}
+#calling-card>*:not(.cc-band){position:relative;}
+.cc-top{
+  display:flex;justify-content:space-between;gap:10px;
+  font-weight:700;font-size:clamp(9px,.9vw,13px);letter-spacing:.24em;text-transform:uppercase;
+  border-bottom:3px solid var(--black);padding-bottom:6px;
+}
+.cc-top span:first-child{color:var(--red);}
+.cc-mono{margin:4% 0 2%;line-height:.85;}
+.cc-mono .ransom{font-size:min(11vw,180px,23vh);}
+.cc-mono .ch{text-shadow:none;}
+.cc-mono .ch:not(.box):not(.boxw):not(.red){color:var(--black);}
+.cc-msg{
+  font-family:'Archivo Black','Arial Black',Impact,sans-serif;
+  font-size:clamp(12px,min(1.15vw,2.1vh),18px);line-height:1.15;text-transform:uppercase;
+  background:var(--black);color:var(--white);padding:7px 10px;
+  transform:rotate(-2deg);margin-top:auto;width:fit-content;max-width:100%;
+  box-shadow:5px 5px 0 var(--red);
+}
+.cc-msg .hl{background:var(--red);padding:0 4px;}
+.cc-sign{margin-top:6%;align-self:flex-end;transform:rotate(-3deg);}
+.cc-sign .ransom{font-size:clamp(15px,1.7vw,26px);}
+.cc-sign .ch.red{text-shadow:none;}
+.cc-foot{
+  margin-top:3%;align-self:flex-end;
+  font-weight:700;font-size:clamp(8px,.8vw,11px);letter-spacing:.3em;text-transform:uppercase;opacity:.7;
+}
+#card-stage.hit .cc-shadow{animation:cardHit .32s cubic-bezier(.2,1.4,.4,1), cardFloat 7s ease-in-out .32s infinite;}
+@keyframes cardHit{0%{transform:scale(1);}30%{transform:scale(.94) rotate(-3deg) translateX(10px);}100%{transform:scale(1) rotate(0);}}
+@media (max-width:900px){
+  #card-stage{right:4vw;top:auto;bottom:6vh;transform:perspective(1100px) rotate(-7deg);width:min(40vw,240px);opacity:.55;}
+}
+@media (max-width:700px){
+  #card-stage{width:30vw;bottom:10vh;right:4vw;}
+  #calling-card{padding:10%;}
+  .cc-msg,.cc-sign,.cc-foot,.cc-top span:last-child{display:none;}
+  .cc-mono .ransom{font-size:15vw;}
 }
 
 /* P5R slash — three-stripe parallelogram (red / black / dark-red) */
@@ -569,7 +604,6 @@ body[data-screen]:not([data-screen="home"]) #hero-wrap{
   64% {transform:translateX(0%);}
   100%{transform:translateX(120%);}
 }
-@media (max-width:900px){.hero-pose{max-width:70vw;opacity:.5;}}
 
 .card .thumb{
   margin:-20px -22px 14px;height:150px;overflow:hidden;position:relative;
